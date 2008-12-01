@@ -1,0 +1,7 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/RDR/Collector.pm
+examples/example_rdr_collect.pl
+META.yml                                 Module meta-data (added by MakeMaker)
