@@ -2,6 +2,9 @@
 
 use strict;
 use RDR::Collector;
+use IO::File;
+
+my $handle;
 
 # This is an example wrapper script to collect/process RDR records
 #
@@ -9,12 +12,17 @@ use RDR::Collector;
 # however this did not include any interaction with a database/logging
 # service.
 
+my $date=`date +%Y_%m_%d_%H_%M`;chop($date);
+
+my $handle = IO::File->new("/rdr/data_records_final_$date\_only_raw","w");
+
 my $rdr_client = new RDR::Collector(
 			[
-			ServerIP => '10.1.1.1'
-			ServerPort => '33000',
+			ServerIP => '192.168.1.1',
+			ServerPort => '10000',
 			Timeout => 2,
-			DataHandler => \&display_data
+			FileHandle => $handle,
+			DataHandler => \&collect_data
 			]
 			);
 
@@ -37,24 +45,19 @@ exit(0);
 # This routine is called from DataHandler when the module
 # instance is initialised.
 # 4 parameters are returned, internal ref, remote IP, remote Port and 
-# a pointer to a hash with key/value pairs of the RDR record.
-sub display_data
+# the raw data
+sub collect_data
 {
 my ( $glob ) = shift;
 my ( $remote_ip ) = shift;
 my ( $remote_port ) = shift;
 my ( $data ) = shift;
 
-# This code prints out all elements, except the raw RDR data,
-# passed to the data pointer. It is commented out and is really only
-# here for demonstration purposes.
-my $attribute_line;
-my $data_line;
-foreach my $attribute ( sort { $a<=> $b } keys %{$data} )
-	{
-	next if $attribute=~/^rawdata/i;
-	print "attribute '$attribute' value '${$data}{$attribute}'\n";
-	}
+my $handle = ${$glob}{'FileHandle'};
+
+# This code prints out the raw data to the file.
+
+print $handle $data;
 
 }
 

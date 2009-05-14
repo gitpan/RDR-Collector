@@ -3,5 +3,7 @@ MANIFEST
 Makefile.PL
 README
 lib/RDR/Collector.pm
-examples/example_rdr_collect.pl
+lib/RDR/Processor.pm
+examples/example_rdr_collect_only.pl
+examples/example_process_raw.pl
 META.yml                                 Module meta-data (added by MakeMaker)
