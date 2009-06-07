@@ -1,10 +1,13 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 use strict;
 use RDR::Processor;
 use IO::File;
 
 # This is an example wrapper script to process RDR records
+# You should specify two elements when running the script
+#
+# the RDR raw data file and the RDR name.
 #
 
 my $handler_file;
@@ -20,11 +23,7 @@ my $rdr_client = new RDR::Processor(
 			]
 			);
 
-
-# This is a little hacky, but works
-
 $rdr_client->process_file();
-
 
 exit(0);
 
@@ -42,7 +41,11 @@ my ( $data ) = shift;
 
 my $attribute_line;
 my $data_line;
-#next unless ${$data}{'RDR_Record'}=~/^${$glob}{'RDRRecords'}/i;
+
+# Comment out this line to show all RDRs.
+next unless ${$data}{'RDR_Record'}=~/^${$glob}{'RDRRecords'}/i;
+
+
 my @keys = keys %{$data};
 foreach my $key_name ( @keys )
 	{

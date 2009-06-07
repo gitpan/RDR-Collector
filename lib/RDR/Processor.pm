@@ -11,11 +11,11 @@ RDR::Processor - Decodes RDRv1 packets
 
 =head1 VERSION
 
-Version 0.071
+Version 1.0000
 
 =cut
 
-our $VERSION = '0.071';
+our $VERSION = '1.0000';
 
 =head1 SYNOPSIS
 
@@ -116,34 +116,38 @@ if ( !open ($handler_file,"<$filename") )
 	}
 	
 # This is a little hacky, but works
+# This has been speeded up, now only large reads
+# it was killing the disc due to the short read method.
+# Still a bit hacky though.
 
 my $buffer;
 my $buffer2;
-my $buffer3;
-my $remainder="";
+my $length = 2000 ; 
 
-while ( ( my $len = sysread ( $handler_file,$buffer, 5 )) > 0 )
+while ( ( my $len = sysread ( $handler_file,$buffer2, 4096 )) > 0 )
         {
-        $buffer = $remainder.$buffer;
-        $remainder="";
-        my ( $proc ) = unpack ("C",$buffer );
-        my ( $length ) = substr($buffer,1,4);
-        $length = hex(substr($length,0,1)).hex(substr($length,1,1)).hex(substr($length,2,1)).hex(substr($length,3,1));
-        my $len2 = sysread ( $handler_file, $buffer2, $length ) ;
-        if ( $len2!=$length )
-                {
-                print "Failed to read full record.\n";
-                next;
-                }
-        $buffer3= $buffer.$buffer2;
-        $remainder=$self->check_data_available($buffer3);
+	print "Reading 4k.\n";
+	$buffer=$buffer.$buffer2;
+	while ( ($length+5) < length($buffer) )
+		{
+		print "We entered here.\n";
+		my ( $proc ) = unpack ("C",$buffer );
+		( $length ) = substr($buffer,1,4);
+		$length = convert_chars_value ( $length );
+#		$length = hex(substr($length,0,1)).hex(substr($length,1,1)).hex(substr($length,2,1)).hex(substr($length,3,1));
+		if ( ($length)+5<=length($buffer) )
+			{
+			my $body = substr($buffer,0,$length+5);
+			$buffer = substr($buffer, length($body), length($buffer)-length($body) );
+        		my ($deader) = $self->check_data_available($body);
+			}
+		}
         }
 
 close ($handler_file);
 
 return 1;
 }
-
 
 sub convert_chars_value
 {
@@ -408,8 +412,6 @@ if ( scalar(keys %{$trans_fields})> 0 )
 
 		if ( $value=~/^dead/i )
                         {
-                        #print "Value was DEAD return outbound.\n";
-                       # return $data_block;
 			${$pointer}{ ${$trans_fields}{$a} } ="DEAD";
 			next;
                         }
@@ -999,7 +1001,24 @@ my ( %rdr_fields )
                                         8 => 'generator_id',
                                         9 => 'attack_time',
                                         10 => 'report_time'
+                                },
+                        'MaliciousTraffic' =>
+                                {
+                                        0 => 'attack_id',
+                                        1 => 'subscriber_id',
+                                        2 => 'attack_ip',
+                                        3 => 'other_ip',
+                                        4 => 'port_number',
+                                        5 => 'attack_type',
+                                        6 => 'side',
+                                        7 => 'ip_protocol',
+                                        8 => 'configured_duration',
+                                        9 => 'duration',
+                                        10 => 'end_time',
+					11 => 'attack',
+					12 => 'malicious_sessions'
                                 }
+
                         );
 return \%rdr_fields;
 }
@@ -1097,15 +1116,11 @@ Please report any bugs or feature requests to C<bug-rdr-collector at rt.cpan.org
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=RDR-Processor>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
-
-
-
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
     perldoc RDR::Processor
-
 
 You can also look for information at:
 
